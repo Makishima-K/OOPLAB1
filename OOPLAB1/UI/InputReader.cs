@@ -104,10 +104,11 @@ public static class InputReader
     public static int Choose(string title, IReadOnlyList<string> options, bool allowCancel = true)
     {
         Console.WriteLine(title);
+        int width = options.Count.ToString().Length;   // " 9." and "10." line up
         for (int i = 0; i < options.Count; i++)
-            Console.WriteLine($"  {i + 1}. {options[i]}");
+            Console.WriteLine($"  {(i + 1).ToString().PadLeft(width)}. {options[i]}");
         if (allowCancel)
-            Console.WriteLine("  0. Cancel");
+            Console.WriteLine($"  {"0".PadLeft(width)}. Cancel");
 
         int choice = ReadInt("Your choice: ", allowCancel ? 0 : 1, options.Count);
         return choice - 1;
