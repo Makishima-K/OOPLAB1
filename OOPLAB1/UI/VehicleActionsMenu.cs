@@ -1,12 +1,15 @@
 using OOPLAB1.Fuel;
 using OOPLAB1.Vehicles;
 using OOPLAB1.Vehicles.Air;
+using OOPLAB1.Vehicles.Air.Helicopters;
 using OOPLAB1.Vehicles.Ground;
 using OOPLAB1.Vehicles.Ground.Cars;
+using OOPLAB1.Vehicles.Water;
+using OOPLAB1.Vehicles.Water.Ships;
 
 namespace OOPLAB1.UI;
 
-// Actions that only some vehicles have: passengers, cargo, trailer, sidecar, charging.
+// Actions that only some vehicles have: passengers, cargo, trailer, sidecar, sling, charging.
 // The menu is built for the chosen vehicle, so it shows only what this vehicle can do.
 public static class VehicleActionsMenu
 {
@@ -40,6 +43,10 @@ public static class VehicleActionsMenu
                 menu.Add("Time to full charge", () => ShowTimeToFullCharge(electricCar))
                     .Add("Cost of full charge", () => ShowChargingCost(electricCar, prices));
                 break;
+            case CargoHelicopter helicopter:
+                menu.Add("Hang a load on the sling", () => AttachSlingLoad(helicopter))
+                    .Add("Release the sling load", () => DetachSlingLoad(helicopter));
+                break;
         }
 
         if (menu.Count == 0)
@@ -58,21 +65,22 @@ public static class VehicleActionsMenu
             parts.Add($"passengers {vehicle.Passengers} / {vehicle.MaxPassengers}");
         if (vehicle.MaxCargo > 0)
             parts.Add($"cargo {vehicle.CurrentCargo:F0} / {vehicle.MaxCargo:F0} kg");
-        switch (vehicle)
-        {
-            case Truck truck:
-                parts.Add(truck.HasTrailer ? $"trailer {truck.TrailerCapacity:F0} kg" : "no trailer");
-                break;
-            case Motorcycle motorcycle:
-                parts.Add(motorcycle.HasSidecar ? "with sidecar" : "no sidecar");
-                break;
-            case ElectricCar electricCar:
-                parts.Add(electricCar.EnergyStatus);
-                break;
-            case AirVehicle aircraft:
-                parts.Add($"fuel reserve {aircraft.FuelReserve * 100:0}%");
-                break;
-        }
+        if (vehicle is Truck truck)
+            parts.Add(truck.HasTrailer ? $"trailer {truck.TrailerCapacity:F0} kg" : "no trailer");
+        if (vehicle is Motorcycle motorcycle)
+            parts.Add(motorcycle.HasSidecar ? "with sidecar" : "no sidecar");
+        if (vehicle is ElectricCar electricCar)
+            parts.Add(electricCar.EnergyStatus);
+        if (vehicle is CargoHelicopter helicopter)
+            parts.Add(helicopter.HasSlingLoad
+                ? $"sling {helicopter.SlingLoad:F0} kg, climb max {helicopter.AllowedClimbAngle:0} deg"
+                : "sling empty");
+        if (vehicle is AirVehicle aircraft)
+            parts.Add($"fuel reserve {aircraft.FuelReserve * 100:0}%");
+        if (vehicle is PassengerLiner liner)
+            parts.Add($"lifeboats {liner.Lifeboats}");
+        if (vehicle is WaterVehicle vessel)
+            parts.Add($"draft {vessel.Draft:F1} m, speed {vessel.SpeedThroughWater:F1} km/h");
         parts.Add($"consumption {vehicle.FuelConsumption(100):F2} {vehicle.FuelUnit}/100 km");
         return string.Join(", ", parts);
     }
@@ -145,6 +153,26 @@ public static class VehicleActionsMenu
     {
         truck.DetachTrailer();
         ConsolePrinter.Success("Trailer detached.");
+    }
+
+    private static void AttachSlingLoad(CargoHelicopter helicopter)
+    {
+        if (helicopter.HasSlingLoad)
+        {
+            Console.WriteLine("A load is already on the sling.");
+            return;
+        }
+        double weight = InputReader.ReadDouble($"Load on the sling (kg, up to {helicopter.MaxSlingLoad:0.#}): ",
+                                               1, helicopter.MaxSlingLoad);
+        helicopter.AttachSlingLoad(weight);
+        ConsolePrinter.Success($"{weight:0.#} kg on the sling; climb angle is now limited to " +
+                               $"{helicopter.AllowedClimbAngle:0} deg.");
+    }
+
+    private static void DetachSlingLoad(CargoHelicopter helicopter)
+    {
+        helicopter.DetachSlingLoad();
+        ConsolePrinter.Success("The sling load is released.");
     }
 
     private static void AttachSidecar(Motorcycle motorcycle)

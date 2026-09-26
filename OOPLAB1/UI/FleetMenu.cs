@@ -2,11 +2,13 @@ using OOPLAB1.Fuel;
 using OOPLAB1.Vehicles;
 using OOPLAB1.Vehicles.Air;
 using OOPLAB1.Vehicles.Ground.Cars;
+using OOPLAB1.Vehicles.Water;
 
 namespace OOPLAB1.UI;
 
 // Main menu of the program. Works with every vehicle through the Vehicle base class;
-// only charging and flying have to know the exact type (ElectricCar, AirVehicle).
+// only charging, flying and sailing have to know the exact type
+// (ElectricCar, AirVehicle, WaterVehicle).
 public sealed class FleetMenu
 {
     private readonly Fleet _fleet;
@@ -24,7 +26,7 @@ public sealed class FleetMenu
             .Add("Add a vehicle", AddVehicle)
             .Add("Show all vehicles", ShowAllVehicles)
             .Add("Vehicle details", ShowDetails)
-            .Add("Drive / fly", DriveOrFly)
+            .Add("Drive / fly / sail", DriveOrFly)
             .Add("Refuel / charge", RefuelOrCharge)
             .Add("Special actions (passengers, cargo, sidecar...)", SpecialActions)
             .Add("Remove a vehicle", RemoveVehicle)
@@ -65,6 +67,8 @@ public sealed class FleetMenu
         Vehicle? vehicle = SelectVehicle();
         if (vehicle is AirVehicle aircraft)
             FlyOrTaxi(aircraft);
+        else if (vehicle is WaterVehicle vessel)
+            VoyageDialog.Run(vessel);
         else if (vehicle != null)
             Drive(vehicle);
     }

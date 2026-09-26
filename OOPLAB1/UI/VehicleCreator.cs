@@ -6,6 +6,8 @@ using OOPLAB1.Vehicles.Air.Helicopters;
 using OOPLAB1.Vehicles.Air.Planes;
 using OOPLAB1.Vehicles.Ground;
 using OOPLAB1.Vehicles.Ground.Cars;
+using OOPLAB1.Vehicles.Water.Boats;
+using OOPLAB1.Vehicles.Water.Ships;
 
 namespace OOPLAB1.UI;
 
@@ -23,15 +25,23 @@ public static class VehicleCreator
         ("Cargo airplane", CreateCargoAirplane),
         ("Light airplane", CreateLightAirplane),
         ("Balloon", CreateBalloon),
+        ("Airship", CreateAirship),
         ("Helicopter", CreateHelicopter),
+        ("Cargo helicopter", CreateCargoHelicopter),
+        ("Motor boat", CreateMotorBoat),
+        ("Cargo ship", CreateCargoShip),
+        ("Passenger liner", CreatePassengerLiner),
+        ("Sailboat", CreateSailboat),
     };
 
     private static readonly FuelType[] CombustionFuels = { FuelType.Petrol, FuelType.Diesel, FuelType.Gas };
     private static readonly FuelType[] AviationFuels = { FuelType.Petrol, FuelType.Kerosene };
 
-    // Airliners have huge tanks and consumption, so their input limits are bigger.
+    // Airliners and ships have huge tanks and consumption, so their input limits are bigger.
     private const double AircraftMaxTank = 400_000;
     private const double AircraftMaxConsumption = 2000;
+    private const double ShipMaxTank = 20_000_000;
+    private const double ShipMaxConsumption = 100_000;
 
     // Asks for the type and all data. Returns null if the user cancels.
     public static Vehicle? Create(Fleet fleet)
@@ -126,8 +136,19 @@ public static class VehicleCreator
         var info = ReadCommonInfo();
         Console.WriteLine("Fuel type: Gas (propane)");
         var tank = ReadFuelTank(maxCapacity: 1000, maxConsumptionRate: AircraftMaxConsumption);
-        var flight = ReadFlightData("Wind speed (km/h): ", 1);
+        var flight = ReadFlightData("Typical wind (km/h, the fuel rate is given for it): ", 1);
         return new Balloon(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
+                           info.Mileage, tank.ConsumptionRate, info.Year,
+                           flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed);
+    }
+
+    private static Vehicle CreateAirship(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        Console.WriteLine("Fuel type: Petrol (engines)");
+        var tank = ReadFuelTank(maxCapacity: 20_000, maxConsumptionRate: AircraftMaxConsumption);
+        var flight = ReadFlightData("Cruise speed (km/h): ", 10);
+        return new Airship(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
                            info.Mileage, tank.ConsumptionRate, info.Year,
                            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed);
     }
@@ -138,12 +159,74 @@ public static class VehicleCreator
         FuelType fuelType = ReadFuelType(AviationFuels);
         var tank = ReadFuelTank(AircraftMaxTank, AircraftMaxConsumption);
         var flight = ReadFlightData("Cruise speed (km/h): ", 50);
-        double maxClimbAngle = InputReader.ReadDouble(
-            $"Maximum climb angle (degrees, {Helicopter.MinClimbAngle}-{Helicopter.VerticalAngle}): ",
-            Helicopter.MinClimbAngle, Helicopter.VerticalAngle);
+        double maxClimbAngle = ReadMaxClimbAngle();
         return new Helicopter(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
             tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
             flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed, maxClimbAngle);
+    }
+
+    private static Vehicle CreateCargoHelicopter(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(AviationFuels);
+        var tank = ReadFuelTank(AircraftMaxTank, AircraftMaxConsumption);
+        var flight = ReadFlightData("Cruise speed (km/h): ", 50);
+        double maxClimbAngle = ReadMaxClimbAngle();
+        double cargoCapacity = InputReader.ReadDouble("Cargo capacity inside (kg): ", 100, 30_000);
+        double maxSlingLoad = InputReader.ReadDouble("Maximum load on the sling (kg): ", 100, 30_000);
+        return new CargoHelicopter(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
+            tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed,
+            maxClimbAngle, cargoCapacity, maxSlingLoad);
+    }
+
+    private static Vehicle CreateMotorBoat(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(CombustionFuels);
+        var tank = ReadFuelTank(ShipMaxTank, ShipMaxConsumption);
+        var vessel = ReadVesselData("Cruise speed (km/h): ", "Draft (m): ");
+        return new MotorBoat(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
+                             info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+                             vessel.Speed, vessel.Draft);
+    }
+
+    private static Vehicle CreateCargoShip(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(CombustionFuels);
+        var tank = ReadFuelTank(ShipMaxTank, ShipMaxConsumption);
+        var vessel = ReadVesselData("Cruise speed, empty (km/h): ", "Draft when empty (m): ");
+        double loadedDraft = InputReader.ReadDouble($"Draft when fully loaded (m, {vessel.Draft:0.#}-30): ",
+                                                    vessel.Draft, 30);
+        double cargoCapacity = InputReader.ReadDouble("Cargo capacity (kg): ", 1000, 500_000_000);
+        return new CargoShip(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
+                             info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+                             vessel.Speed, vessel.Draft, loadedDraft, cargoCapacity);
+    }
+
+    private static Vehicle CreatePassengerLiner(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(CombustionFuels);
+        var tank = ReadFuelTank(ShipMaxTank, ShipMaxConsumption);
+        var vessel = ReadVesselData("Cruise speed (km/h): ", "Draft (m): ");
+        int seats = InputReader.ReadInt($"Passenger places (1-{PassengerLiner.MaxSeats}): ",
+                                        1, PassengerLiner.MaxSeats);
+        return new PassengerLiner(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
+                                  tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+                                  vessel.Speed, vessel.Draft, seats);
+    }
+
+    private static Vehicle CreateSailboat(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(CombustionFuels);
+        var tank = ReadFuelTank();
+        var vessel = ReadVesselData("Speed under the engine (km/h): ", "Draft (m): ");
+        return new Sailboat(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
+                            info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+                            vessel.Speed, vessel.Draft);
     }
 
     // Asks until the number has a valid format and is not used in the fleet yet.
@@ -201,6 +284,21 @@ public static class VehicleCreator
         double descentRate = InputReader.ReadDouble("Descent rate (m/s): ", 0.5, 300);
         double speed = InputReader.ReadDouble(speedPrompt, minSpeed, 3500);
         return (maxAltitude, climbRate, descentRate, speed);
+    }
+
+    private static double ReadMaxClimbAngle()
+    {
+        return InputReader.ReadDouble(
+            $"Maximum climb angle (degrees, {Helicopter.MinClimbAngle}-{Helicopter.VerticalAngle}): ",
+            Helicopter.MinClimbAngle, Helicopter.VerticalAngle);
+    }
+
+    // Common data of all vessels.
+    private static (double Speed, double Draft) ReadVesselData(string speedPrompt, string draftPrompt)
+    {
+        double speed = InputReader.ReadDouble(speedPrompt, 1, 100);
+        double draft = InputReader.ReadDouble(draftPrompt, 0.1, 30);
+        return (speed, draft);
     }
 
     private static (int Doors, int Seats) ReadDoorsAndSeats()

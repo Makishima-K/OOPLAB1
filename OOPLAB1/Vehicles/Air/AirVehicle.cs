@@ -10,9 +10,11 @@ namespace OOPLAB1.Vehicles.Air;
 //   _______/__|____________________________|__\_______
 //          |<------------- distance -------------->|
 //
-// Left triangle: the aircraft rises with ClimbRate (m/s) and at the same time flies forward
-// with CruiseSpeed, so its horizontal leg is CruiseSpeed * climb time. Then it keeps one
+// Left triangle: the aircraft rises with ClimbRate (m/s) and at the same time moves forward
+// with its ground speed, so its horizontal leg is ground speed * climb time. Then it keeps one
 // altitude. Right triangle: the same with DescentRate.
+// Wind: ground speed = CruiseSpeed + average wind of the route (+ tailwind, - headwind).
+// Engines burn fuel by time, so a headwind makes every km more expensive, a tailwind cheaper.
 // Fuel: climb x2, cruise x1, descent x0.5 of the normal consumption, plus a reserve
 // (10 %, subclasses may change it). Without enough fuel the flight is cancelled.
 // Aircraft cannot drive on the ground - only an Airplane can taxi.
@@ -26,7 +28,7 @@ public abstract class AirVehicle : Vehicle
     public double MaxAltitude { get; }   // m, what the aircraft can technically reach
     public double ClimbRate { get; }     // m/s
     public double DescentRate { get; }   // m/s
-    public double CruiseSpeed { get; }   // km/h
+    public double CruiseSpeed { get; }   // km/h, speed through the air
 
     protected AirVehicle(string registrationNumber, string brand, string model,
                          double fuelLevel, double tankCapacity, double mileage,
@@ -56,19 +58,23 @@ public abstract class AirVehicle : Vehicle
     // The highest allowed altitude; rules can make it lower than MaxAltitude.
     public virtual double AltitudeLimit => MaxAltitude;
 
+    // Speed over the ground with the average wind of the route (+ tailwind, - headwind).
+    public virtual double GroundSpeed(double wind) => CruiseSpeed + wind;
+
     // Calculates the flight without making it: the three parts, the time and the fuel.
-    public FlightPlan PlanFlight(double distance, double altitude)
+    public FlightPlan PlanFlight(double distance, double altitude, double wind = 0)
     {
         EnsurePositive(distance, "Flight distance");
         EnsureInRange(altitude, MinAltitude, AltitudeLimit, "Altitude");
+        double groundSpeed = CheckedGroundSpeed(wind);
 
-        double climbDistance = ClimbDistance(altitude);
-        double descentDistance = DescentDistance(altitude);
+        double climbDistance = ClimbDistance(altitude, groundSpeed);
+        double descentDistance = DescentDistance(altitude, groundSpeed);
         double cruiseDistance = distance - climbDistance - descentDistance;
         if (cruiseDistance < -Tolerance)
             throw new VehicleException(
                 $"{distance:0.#} km is too short to climb to {altitude:F0} m and descend again " +
-                $"(at most {MaxAltitudeFor(distance):F0} m).");
+                $"(at most {MaxAltitudeFor(distance, wind):F0} m).");
         cruiseDistance = Math.Max(0, cruiseDistance);
 
         // The aircraft really flies along the hypotenuses of the triangles.
@@ -76,32 +82,36 @@ public abstract class AirVehicle : Vehicle
         double climbPath = Math.Sqrt(climbDistance * climbDistance + altitudeKm * altitudeKm);
         double descentPath = Math.Sqrt(descentDistance * descentDistance + altitudeKm * altitudeKm);
 
-        double fuel = FuelConsumption(climbPath) * ClimbFuelFactor
-                    + FuelConsumption(cruiseDistance)
-                    + FuelConsumption(descentPath) * DescentFuelFactor;
-        double hours = SlopeHours(altitude, ClimbRate, climbDistance)
-                     + cruiseDistance / CruiseSpeed
-                     + SlopeHours(altitude, DescentRate, descentDistance);
+        // Engines burn fuel by time: the wind changes the time, so it changes the fuel.
+        double windFactor = CruiseSpeed / groundSpeed;
+        double fuel = (FuelConsumption(climbPath) * ClimbFuelFactor
+                     + FuelConsumption(cruiseDistance)
+                     + FuelConsumption(descentPath) * DescentFuelFactor) * windFactor;
+        double hours = SlopeHours(altitude, ClimbRate, climbDistance, groundSpeed)
+                     + cruiseDistance / groundSpeed
+                     + SlopeHours(altitude, DescentRate, descentDistance, groundSpeed);
 
-        return new FlightPlan(distance, altitude, climbDistance, cruiseDistance, descentDistance,
+        return new FlightPlan(distance, altitude, wind, groundSpeed,
+                              climbDistance, cruiseDistance, descentDistance,
                               climbPath + cruiseDistance + descentPath, hours,
                               fuel, fuel * (1 + FuelReserve));
     }
 
     // The highest altitude for this distance: the aircraft must have time to descend.
-    public double MaxAltitudeFor(double distance)
+    public double MaxAltitudeFor(double distance, double wind = 0)
     {
         EnsurePositive(distance, "Flight distance");
-        double kmPerMetre = ClimbDistance(1) + DescentDistance(1);   // both triangles grow with the altitude
+        double groundSpeed = CheckedGroundSpeed(wind);
+        double kmPerMetre = ClimbDistance(1, groundSpeed) + DescentDistance(1, groundSpeed);   // both triangles grow with the altitude
         return kmPerMetre > 0 ? Math.Min(AltitudeLimit, distance / kmPerMetre) : AltitudeLimit;
     }
 
     public bool HasEnoughFuel(FlightPlan plan) => plan.FuelRequired <= FuelLevel + Tolerance;
 
     // Makes the flight, or cancels it if the fuel (with the reserve) is not enough.
-    public FlightPlan Fly(double distance, double altitude)
+    public FlightPlan Fly(double distance, double altitude, double wind = 0)
     {
-        FlightPlan plan = PlanFlight(distance, altitude);
+        FlightPlan plan = PlanFlight(distance, altitude, wind);
         if (!HasEnoughFuel(plan))
             throw new VehicleException(
                 $"Flight cancelled: {plan.FuelRequired:F1} L needed " +
@@ -112,26 +122,39 @@ public abstract class AirVehicle : Vehicle
         return plan;
     }
 
-    // Horizontal leg of the left triangle, km: how far the aircraft flies forward while climbing.
-    protected virtual double ClimbDistance(double altitude)
+    // Horizontal leg of the left triangle, km: how far the aircraft moves over the ground
+    // while climbing.
+    protected virtual double ClimbDistance(double altitude, double groundSpeed)
     {
         double climbSeconds = altitude / ClimbRate;
-        return CruiseSpeed * climbSeconds / 3600;
+        return groundSpeed * climbSeconds / 3600;
     }
 
     // Horizontal leg of the right triangle, km.
-    protected virtual double DescentDistance(double altitude)
+    protected virtual double DescentDistance(double altitude, double groundSpeed)
     {
         double descentSeconds = altitude / DescentRate;
-        return CruiseSpeed * descentSeconds / 3600;
+        return groundSpeed * descentSeconds / 3600;
+    }
+
+    private double CheckedGroundSpeed(double wind)
+    {
+        if (!double.IsFinite(wind))
+            throw new ArgumentException("Wind must be a number.");
+        double groundSpeed = GroundSpeed(wind);
+        if (groundSpeed <= 0)
+            throw new VehicleException(
+                $"{TypeName} {RegistrationNumber} cannot move forward: ground speed {groundSpeed:F0} km/h.");
+        return groundSpeed;
     }
 
     // A slope takes as long as the slower of two movements: changing the altitude with the
-    // vertical speed, or flying the horizontal leg with CruiseSpeed.
-    private double SlopeHours(double altitude, double verticalSpeed, double horizontalDistance)
+    // vertical speed, or covering the horizontal leg with the ground speed.
+    private static double SlopeHours(double altitude, double verticalSpeed,
+                                     double horizontalDistance, double groundSpeed)
     {
         double verticalHours = altitude / verticalSpeed / 3600;
-        double horizontalHours = horizontalDistance / CruiseSpeed;
+        double horizontalHours = horizontalDistance / groundSpeed;
         return Math.Max(verticalHours, horizontalHours);
     }
 

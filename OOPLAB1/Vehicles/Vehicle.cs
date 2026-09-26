@@ -108,7 +108,7 @@ public abstract class Vehicle
     public virtual void Drive(double distance)
     {
         if (!CanDrive)
-            throw new VehicleException($"{TypeName} cannot drive on the ground - it can only fly.");
+            throw new VehicleException($"{TypeName} cannot drive on the ground.");
         EnsurePositive(distance, "Distance");
         double fuelNeeded = FuelConsumption(distance);
         if (fuelNeeded > FuelLevel + Tolerance)
@@ -197,7 +197,7 @@ public abstract class Vehicle
     public override string ToString()
     {
         string name = $"{Brand} {Model}";
-        return $"{RegistrationNumber,-10} {TypeName,-15} {name,-22} {EnergyStatus,-31} {Mileage,8:F0} km";
+        return $"{RegistrationNumber,-10} {TypeName,-16} {name,-25} {EnergyStatus,-31} {Mileage,8:F0} km";
     }
 
     // " ab-1234 " -> "AB-1234"
