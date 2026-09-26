@@ -45,5 +45,11 @@ public static class DemoData
         fleet.Add(new Balloon("YL-BAL", "Cameron", "Z-105",
             fuelLevel: 120, tankCapacity: 160, mileage: 2000, fuelConsumptionRate: 400,
             developYear: 2018, maxAltitude: 3000, climbRate: 2.5, descentRate: 2, windSpeed: 15));
+
+        // Robinson R44: about 57 L/h at 200 km/h = 28.5 L/100 km; slow vertical landing
+        fleet.Add(new Helicopter("YL-HEL", "Robinson", "R44",
+            fuelLevel: 150, tankCapacity: 180, mileage: 50000, fuelConsumptionRate: 28.5,
+            fuelType: FuelType.Petrol, developYear: 2015,
+            maxAltitude: 4200, climbRate: 5, descentRate: 2.5, cruiseSpeed: 200, maxClimbAngle: 30));
     }
 }

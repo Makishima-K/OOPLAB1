@@ -17,7 +17,7 @@ public static class VehicleCreator
         ("Cargo airplane", CreateCargoAirplane),
         ("Light airplane", CreateLightAirplane),
         ("Balloon", CreateBalloon),
-        // TODO: ("Helicopter", CreateHelicopter) - see Vehicles/Air/Helicopter.cs
+        ("Helicopter", CreateHelicopter),
     };
 
     private static readonly FuelType[] CombustionFuels = { FuelType.Petrol, FuelType.Diesel, FuelType.Gas };
@@ -124,6 +124,20 @@ public static class VehicleCreator
         return new Balloon(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
                            info.Mileage, tank.ConsumptionRate, info.Year,
                            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed);
+    }
+
+    private static Vehicle CreateHelicopter(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(AviationFuels);
+        var tank = ReadFuelTank(AircraftMaxTank, AircraftMaxConsumption);
+        var flight = ReadFlightData("Cruise speed (km/h): ", 50);
+        double maxClimbAngle = InputReader.ReadDouble(
+            $"Maximum climb angle (degrees, {Helicopter.MinClimbAngle}-{Helicopter.VerticalAngle}): ",
+            Helicopter.MinClimbAngle, Helicopter.VerticalAngle);
+        return new Helicopter(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
+            tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed, maxClimbAngle);
     }
 
     // Asks until the number has a valid format and is not used in the fleet yet.

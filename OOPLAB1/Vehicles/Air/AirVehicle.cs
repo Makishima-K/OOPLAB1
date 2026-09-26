@@ -77,9 +77,9 @@ public abstract class AirVehicle : Vehicle
         double fuel = FuelConsumption(climbPath) * ClimbFuelFactor
                     + FuelConsumption(cruiseDistance)
                     + FuelConsumption(descentPath) * DescentFuelFactor;
-        double hours = altitude / ClimbRate / 3600
+        double hours = SlopeHours(altitude, ClimbRate, climbDistance)
                      + cruiseDistance / CruiseSpeed
-                     + altitude / DescentRate / 3600;
+                     + SlopeHours(altitude, DescentRate, descentDistance);
 
         return new FlightPlan(distance, altitude, climbDistance, cruiseDistance, descentDistance,
                               climbPath + cruiseDistance + descentPath, hours,
@@ -122,6 +122,15 @@ public abstract class AirVehicle : Vehicle
     {
         double descentSeconds = altitude / DescentRate;
         return CruiseSpeed * descentSeconds / 3600;
+    }
+
+    // A slope takes as long as the slower of two movements: changing the altitude with the
+    // vertical speed, or flying the horizontal leg with CruiseSpeed.
+    private double SlopeHours(double altitude, double verticalSpeed, double horizontalDistance)
+    {
+        double verticalHours = altitude / verticalSpeed / 3600;
+        double horizontalHours = horizontalDistance / CruiseSpeed;
+        return Math.Max(verticalHours, horizontalHours);
     }
 
     // Line about the speed in GetInfo (a balloon shows the wind instead).
