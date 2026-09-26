@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles.Air;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Air.Balloons;
 
 // Hot-air balloon. It burns gas (propane) to heat the air and climb. It has no engine and
 // flies with the wind, so its CruiseSpeed is the wind speed. Like other aircraft it cannot

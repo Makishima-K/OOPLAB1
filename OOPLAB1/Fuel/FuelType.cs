@@ -1,4 +1,4 @@
-namespace OOPLAB1.Vehicles;
+namespace OOPLAB1.Fuel;
 
 // What a vehicle runs on.
 public enum FuelType

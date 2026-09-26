@@ -3,6 +3,7 @@
 // and methods to drive and refuel. Extended with vehicle types and a console menu.
 
 using System.Globalization;
+using OOPLAB1.Fuel;
 using OOPLAB1.UI;
 
 namespace OOPLAB1;

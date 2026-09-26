@@ -1,3 +1,5 @@
+using OOPLAB1.Fuel;
+
 namespace OOPLAB1.Vehicles;
 
 // Base class of all vehicles (variant 6).

@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles.Air;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Air.Planes;
 
 // Passenger airplane: the more people on board, the bigger the fuel reserve for safety.
 // Up to 50 passengers 10 %, then +5 % for every started 100 passengers, at most 40 %:

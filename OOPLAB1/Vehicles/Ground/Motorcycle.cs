@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Ground;
 
 // Motorcycle. One pillion passenger, one more with a sidecar.
 // A sidecar adds 15 % to the consumption, every passenger adds 5 %.

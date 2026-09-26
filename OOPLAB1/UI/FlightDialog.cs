@@ -1,4 +1,5 @@
 using OOPLAB1.Vehicles.Air;
+using OOPLAB1.Vehicles.Air.Helicopters;
 
 namespace OOPLAB1.UI;
 

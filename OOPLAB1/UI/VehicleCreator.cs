@@ -1,5 +1,11 @@
+using OOPLAB1.Fuel;
 using OOPLAB1.Vehicles;
 using OOPLAB1.Vehicles.Air;
+using OOPLAB1.Vehicles.Air.Balloons;
+using OOPLAB1.Vehicles.Air.Helicopters;
+using OOPLAB1.Vehicles.Air.Planes;
+using OOPLAB1.Vehicles.Ground;
+using OOPLAB1.Vehicles.Ground.Cars;
 
 namespace OOPLAB1.UI;
 

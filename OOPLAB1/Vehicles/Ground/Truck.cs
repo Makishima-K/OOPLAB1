@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Ground;
 
 // Diesel truck. Cargo increases the consumption: +1 L/100 km for every 500 kg,
 // proportionally (250 kg -> +0.5, 1000 kg -> +2, 2000 kg -> +4 L/100 km).

@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles.Air;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Air.Planes;
 
 // Cargo airplane: heavy cargo makes the flight itself use more fuel, +1 % for every tonne.
 // It is not a bigger reserve - the reserve stays the normal 10 %.

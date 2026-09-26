@@ -1,4 +1,4 @@
-namespace OOPLAB1.Vehicles;
+namespace OOPLAB1.Vehicles.Ground.Cars;
 
 // Electric car: it has its own battery instead of a fuel tank.
 // Battery in kWh, consumption rate (FuelConsumptionRate) in kWh/100 km, charger power in kW.

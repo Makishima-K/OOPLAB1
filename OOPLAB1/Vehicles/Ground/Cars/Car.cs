@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Ground.Cars;
 
 // Passenger car. Every passenger adds 2 % to the fuel consumption.
 public class Car : Vehicle

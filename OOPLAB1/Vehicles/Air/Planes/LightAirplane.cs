@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles.Air;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Air.Planes;
 
 // Light private airplane (like a Cessna 172). It has no pressurized cabin, so it may not
 // fly higher than 3000 m, even if it could technically climb higher (MaxAltitude).

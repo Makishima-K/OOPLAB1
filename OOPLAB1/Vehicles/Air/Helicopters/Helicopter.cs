@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles.Air;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Air.Helicopters;
 
 // Helicopter. It climbs along a slope like an airplane, but much steeper: the pilot chooses
 // the climb angle for every flight, up to MaxClimbAngle. It lands vertically, because

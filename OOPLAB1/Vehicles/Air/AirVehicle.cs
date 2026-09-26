@@ -1,3 +1,5 @@
+using OOPLAB1.Fuel;
+
 namespace OOPLAB1.Vehicles.Air;
 
 // Base class of aircraft. A flight is a trapezoid: two right triangles and a line between them.

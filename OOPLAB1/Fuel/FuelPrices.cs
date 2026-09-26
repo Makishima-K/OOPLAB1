@@ -1,6 +1,4 @@
-using OOPLAB1.Vehicles;
-
-namespace OOPLAB1;
+namespace OOPLAB1.Fuel;
 
 // Conventional fuel prices: EUR per litre, electricity EUR per kWh.
 // Every fuel type starts with a default price; the user can change any of them.

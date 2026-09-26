@@ -1,4 +1,6 @@
-namespace OOPLAB1.Vehicles.Air;
+using OOPLAB1.Fuel;
+
+namespace OOPLAB1.Vehicles.Air.Planes;
 
 // Airplane: flies like every aircraft (the algorithm is in AirVehicle) and, unlike other
 // aircraft, can also drive on the ground on its wheels (taxiing).
