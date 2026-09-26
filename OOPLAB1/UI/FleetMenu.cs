@@ -13,11 +13,13 @@ public sealed class FleetMenu
 {
     private readonly Fleet _fleet;
     private readonly FuelPrices _prices;
+    private readonly Wind _wind;
 
-    public FleetMenu(Fleet fleet, FuelPrices prices)
+    public FleetMenu(Fleet fleet, FuelPrices prices, Wind wind)
     {
         _fleet = fleet;
         _prices = prices;
+        _wind = wind;
     }
 
     public void Run()
@@ -30,7 +32,7 @@ public sealed class FleetMenu
             .Add("Refuel / charge", RefuelOrCharge)
             .Add("Special actions (passengers, cargo, sidecar...)", SpecialActions)
             .Add("Remove a vehicle", RemoveVehicle)
-            .Add("Fuel prices", ChangeFuelPrice)
+            .Add("Fuel prices and wind", ChangePriceOrWind)
             .Run();
     }
 
@@ -68,19 +70,19 @@ public sealed class FleetMenu
         if (vehicle is AirVehicle aircraft)
             FlyOrTaxi(aircraft);
         else if (vehicle is WaterVehicle vessel)
-            VoyageDialog.Run(vessel);
+            VoyageDialog.Run(vessel, _wind);
         else if (vehicle != null)
             Drive(vehicle);
     }
 
     // Aircraft fly; an airplane can also drive on the ground (taxi).
-    private static void FlyOrTaxi(AirVehicle aircraft)
+    private void FlyOrTaxi(AirVehicle aircraft)
     {
         int choice = aircraft.CanDrive
             ? InputReader.Choose("Fly or drive?", new[] { "Fly", "Drive on the ground (taxi)" })
             : 0;
         if (choice == 0)
-            FlightDialog.Run(aircraft);
+            FlightDialog.Run(aircraft, _wind);
         else if (choice == 1)
             Drive(aircraft);
     }
@@ -165,20 +167,35 @@ public sealed class FleetMenu
         }
     }
 
-    // Shows all prices; the chosen fuel gets a new price.
-    private void ChangeFuelPrice()
+    // Shows all prices and the wind (the last line); the chosen one gets a new value.
+    private void ChangePriceOrWind()
     {
         FuelType[] fuels = Enum.GetValues<FuelType>();
         var lines = fuels.Select(fuel => $"{fuel,-9} {_prices.Describe(fuel)}").ToList();
-        int index = InputReader.Choose("Fuel prices - choose one to change:", lines);
+        lines.Add($"{"Wind",-9} {_wind.Describe()}");
+        int index = InputReader.Choose("Fuel prices and wind - choose one to change:", lines);
         if (index < 0)
             return;
+        if (index == fuels.Length)
+        {
+            ChangeWind();
+            return;
+        }
 
         FuelType fuelType = fuels[index];
         double price = InputReader.ReadDouble(
             $"New {fuelType} price (EUR/{FuelPrices.UnitOf(fuelType)}): ", 0, 10);
         _prices.SetPrice(fuelType, price);
         ConsolePrinter.Success($"{fuelType} now costs {_prices.Describe(fuelType)}.");
+    }
+
+    // The new wind becomes the default for the next flights and voyages.
+    private void ChangeWind()
+    {
+        double speed = InputReader.ReadDouble($"New average wind speed (km/h, 0-{Wind.MaxSpeed:0}): ",
+                                              0, Wind.MaxSpeed);
+        _wind.SetSpeed(speed);
+        ConsolePrinter.Success($"Wind is now {_wind.Describe()}.");
     }
 
     // Returns null if the fleet is empty or the user cancels.

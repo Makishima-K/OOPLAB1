@@ -18,11 +18,12 @@ public static class Program
         ConsolePrinter.Header("OOP Lab 1 - Vehicle fleet (variant 6)");
         var fleet = new Fleet();
         var prices = new FuelPrices();
+        var wind = new Wind();
         try
         {
             if (InputReader.ReadYesNo("Add demo vehicles?"))
                 DemoData.AddTo(fleet);
-            new FleetMenu(fleet, prices).Run();
+            new FleetMenu(fleet, prices, wind).Run();
         }
         catch (EndOfStreamException)
         {

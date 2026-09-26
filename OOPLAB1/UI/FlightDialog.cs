@@ -1,22 +1,26 @@
+using OOPLAB1.Fuel;
 using OOPLAB1.Vehicles.Air;
 using OOPLAB1.Vehicles.Air.Balloons;
 using OOPLAB1.Vehicles.Air.Helicopters;
 
 namespace OOPLAB1.UI;
 
-// Flight in the console: the user enters the distance, the average wind and the altitude,
-// sees the flight plan with the fuel check and decides whether to take off.
+// Flight in the console: the user enters the distance, the average wind (the wind from
+// the menu is the default) and the altitude, sees the flight plan with the fuel check
+// and decides whether to take off.
 public static class FlightDialog
 {
-    public static void Run(AirVehicle aircraft)
+    public static void Run(AirVehicle aircraft, Wind defaultWind)
     {
         Console.WriteLine($"{aircraft.EnergyStatus}, speed {aircraft.CruiseSpeed:F0} km/h, " +
                           $"max altitude {aircraft.AltitudeLimit:F0} m.");
         double distance = InputReader.ReadDouble("Flight distance (km): ", 1, 20_000);
-        double wind = ReadWind(aircraft);
+        double wind = ReadWind(aircraft, defaultWind);
         if (aircraft.GroundSpeed(wind) <= 0)
         {
-            Console.WriteLine($"With this wind {aircraft.TypeName} cannot move forward.");
+            Console.WriteLine(wind == 0
+                ? $"{aircraft.TypeName} cannot move forward without wind."
+                : $"With this wind {aircraft.TypeName} cannot move forward.");
             return;
         }
         if (aircraft is Helicopter helicopter)
@@ -53,11 +57,16 @@ public static class FlightDialog
     }
 
     // A balloon has no engine and only flies with the wind; the others may meet a headwind.
-    private static double ReadWind(AirVehicle aircraft)
+    // Just Enter takes the wind from the menu (as a tailwind for the others).
+    private static double ReadWind(AirVehicle aircraft, Wind defaultWind)
     {
+        double speed = defaultWind.Speed;
         if (aircraft is Balloon and not Airship)
-            return InputReader.ReadDouble("Wind speed (km/h, the balloon flies with it): ", 1, 150);
-        return InputReader.ReadDouble("Average wind (km/h, + tailwind, - headwind): ", -150, 150);
+            return InputReader.ReadDoubleOrDefault(
+                $"Wind speed (km/h, the balloon flies with it), Enter = {speed:0.#}: ", 0, Wind.MaxSpeed, speed);
+        return InputReader.ReadDoubleOrDefault(
+            $"Average wind (km/h, + tailwind, - headwind), Enter = {speed:+0.#;-0.#;0}: ",
+            -Wind.MaxSpeed, Wind.MaxSpeed, speed);
     }
 
     // A helicopter pilot chooses the climb angle for every flight.

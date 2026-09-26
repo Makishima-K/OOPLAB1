@@ -1,21 +1,24 @@
+using OOPLAB1.Fuel;
 using OOPLAB1.Vehicles.Water;
 using OOPLAB1.Vehicles.Water.Boats;
 
 namespace OOPLAB1.UI;
 
 // Voyage in the console: the user enters the distance, the current, the smallest depth of
-// the route (and the wind for a sailboat), sees the voyage plan with the fuel check and
-// decides whether to set sail.
+// the route (and the wind for a sailboat, the wind from the menu is the default), sees the
+// voyage plan with the fuel check and decides whether to set sail.
 public static class VoyageDialog
 {
-    public static void Run(WaterVehicle vessel)
+    public static void Run(WaterVehicle vessel, Wind defaultWind)
     {
         Console.WriteLine($"{vessel.EnergyStatus}, speed {vessel.SpeedThroughWater:F1} km/h, " +
                           $"draft {vessel.Draft:F1} m.");
         double distance = InputReader.ReadDouble("Voyage distance (km): ", 1, 30_000);
         double current = InputReader.ReadDouble("Current (km/h, + with the current, - against): ", -30, 30);
         if (vessel is Sailboat sailboat)
-            sailboat.SetWind(InputReader.ReadDouble("Average wind for the sails (km/h): ", 0, Sailboat.MaxWind));
+            sailboat.SetWind(InputReader.ReadDoubleOrDefault(
+                $"Average wind for the sails (km/h), Enter = {defaultWind.Speed:0.#}: ",
+                0, Wind.MaxSpeed, defaultWind.Speed));
         double depth = InputReader.ReadDouble("Smallest depth on the route (m): ", 0.1, 11_000);
 
         VoyagePlan plan = vessel.PlanVoyage(distance, current, depth);

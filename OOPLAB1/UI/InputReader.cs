@@ -48,18 +48,43 @@ public static class InputReader
     {
         while (true)
         {
-            string text = ReadLine(prompt).Replace(',', '.');
-            bool isNumber = double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture,
-                                            out double value);
-            if (!isNumber || !double.IsFinite(value))
-                ConsolePrinter.Warning($"'{text}' is not a number.");
-            else if (value < min - Tolerance)
-                ConsolePrinter.Warning($"The value must be at least {min:0.##}.");
-            else if (value > max + Tolerance)
-                ConsolePrinter.Warning($"The value must be at most {max:0.##}.");
-            else
-                return Math.Clamp(value, min, max);
+            if (TryParseDouble(ReadLine(prompt), min, max, out double value))
+                return value;
         }
+    }
+
+    // Like ReadDouble, but just Enter keeps the default value.
+    public static double ReadDoubleOrDefault(string prompt, double min, double max, double defaultValue)
+    {
+        if (defaultValue < min || defaultValue > max)
+            throw new ArgumentOutOfRangeException(nameof(defaultValue), "The default value is out of the limits.");
+        while (true)
+        {
+            string text = ReadLine(prompt);
+            if (text.Length == 0)
+                return defaultValue;
+            if (TryParseDouble(text, min, max, out double value))
+                return value;
+        }
+    }
+
+    // Checks a typed number; prints what is wrong and returns false if it does not fit.
+    private static bool TryParseDouble(string text, double min, double max, out double value)
+    {
+        text = text.Replace(',', '.');
+        bool isNumber = double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+        if (!isNumber || !double.IsFinite(value))
+            ConsolePrinter.Warning($"'{text}' is not a number.");
+        else if (value < min - Tolerance)
+            ConsolePrinter.Warning($"The value must be at least {min:0.##}.");
+        else if (value > max + Tolerance)
+            ConsolePrinter.Warning($"The value must be at most {max:0.##}.");
+        else
+        {
+            value = Math.Clamp(value, min, max);
+            return true;
+        }
+        return false;
     }
 
     public static bool ReadYesNo(string prompt)

@@ -8,7 +8,6 @@ namespace OOPLAB1.Vehicles.Water.Boats;
 public class Sailboat : WaterVehicle
 {
     public const double SailFactor = 0.5;
-    public const double MaxWind = 150;   // km/h, a storm
 
     public double WindSpeed { get; private set; }   // km/h, average wind for the next voyage
 
@@ -26,7 +25,7 @@ public class Sailboat : WaterVehicle
     // Sets the average wind for the next voyage (0 = calm, only the engine works).
     public void SetWind(double windSpeed)
     {
-        EnsureInRange(windSpeed, 0, MaxWind, "Wind speed");
+        EnsureInRange(windSpeed, 0, Wind.MaxSpeed, "Wind speed");
         WindSpeed = windSpeed;
     }
 
