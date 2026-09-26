@@ -8,10 +8,12 @@ namespace OOPLAB1.UI;
 public sealed class FleetMenu
 {
     private readonly Fleet _fleet;
+    private readonly FuelPrices _prices;
 
-    public FleetMenu(Fleet fleet)
+    public FleetMenu(Fleet fleet, FuelPrices prices)
     {
         _fleet = fleet;
+        _prices = prices;
     }
 
     public void Run()
@@ -24,6 +26,7 @@ public sealed class FleetMenu
             .Add("Refuel / charge", RefuelOrCharge)
             .Add("Special actions (passengers, cargo, sidecar...)", SpecialActions)
             .Add("Remove a vehicle", RemoveVehicle)
+            .Add("Fuel prices", ChangeFuelPrice)
             .Run();
     }
 
@@ -59,9 +62,21 @@ public sealed class FleetMenu
     {
         Vehicle? vehicle = SelectVehicle();
         if (vehicle is AirVehicle aircraft)
-            FlightDialog.Run(aircraft);
+            FlyOrTaxi(aircraft);
         else if (vehicle != null)
             Drive(vehicle);
+    }
+
+    // Aircraft fly; an airplane can also drive on the ground (taxi).
+    private static void FlyOrTaxi(AirVehicle aircraft)
+    {
+        int choice = aircraft.CanDrive
+            ? InputReader.Choose("Fly or drive?", new[] { "Fly", "Drive on the ground (taxi)" })
+            : 0;
+        if (choice == 0)
+            FlightDialog.Run(aircraft);
+        else if (choice == 1)
+            Drive(aircraft);
     }
 
     private static void Drive(Vehicle vehicle)
@@ -85,7 +100,7 @@ public sealed class FleetMenu
             RefuelTank(vehicle);
     }
 
-    private static void RefuelTank(Vehicle vehicle)
+    private void RefuelTank(Vehicle vehicle)
     {
         Console.WriteLine($"{vehicle.EnergyStatus}, free space {vehicle.FreeTankCapacity:F1} L.");
         if (vehicle.FreeTankCapacity < 0.1)
@@ -93,13 +108,15 @@ public sealed class FleetMenu
             Console.WriteLine("The tank is already full.");
             return;
         }
-        double price = InputReader.ReadDouble($"{vehicle.FuelType} price (EUR per L): ", 0, 10);
+        double price = _prices.GetPrice(vehicle.FuelType);
+        Console.WriteLine($"{vehicle.FuelType} costs {_prices.Describe(vehicle.FuelType)}, " +
+                          $"a full tank = {vehicle.FreeTankCapacity * price:F2} EUR.");
         double amount = InputReader.ReadDouble("Amount of fuel (L): ", 0.1, vehicle.FreeTankCapacity);
         double cost = vehicle.Refuel(amount, price);
         ConsolePrinter.Success($"Added {amount:F1} L for {cost:F2} EUR. {vehicle.EnergyStatus}.");
     }
 
-    private static void ChargeBattery(ElectricCar car)
+    private void ChargeBattery(ElectricCar car)
     {
         Console.WriteLine($"{car.EnergyStatus}, free {car.FreeBatteryCapacity:F1} kWh.");
         if (car.FreeBatteryCapacity < 0.1)
@@ -107,7 +124,9 @@ public sealed class FleetMenu
             Console.WriteLine("The battery is already full.");
             return;
         }
-        double price = InputReader.ReadDouble("Electricity price (EUR per kWh): ", 0, 5);
+        double price = _prices.GetPrice(FuelType.Electric);
+        Console.WriteLine($"Electricity costs {_prices.Describe(FuelType.Electric)}, " +
+                          $"a full charge = {car.CalculateChargingCost(price):F2} EUR.");
         double amount = InputReader.ReadDouble("Energy to add (kWh): ", 0.1, car.FreeBatteryCapacity);
         double power = InputReader.ReadDouble("Charger power (kW): ", 1, 350);
         double hours = InputReader.ReadDouble("Available time (h): ", 0.01, 48);
@@ -124,7 +143,7 @@ public sealed class FleetMenu
     {
         Vehicle? vehicle = SelectVehicle();
         if (vehicle != null)
-            VehicleActionsMenu.Run(vehicle);
+            VehicleActionsMenu.Run(vehicle, _prices);
     }
 
     private void RemoveVehicle()
@@ -138,6 +157,22 @@ public sealed class FleetMenu
             _fleet.Remove(vehicle);
             ConsolePrinter.Success($"{vehicle.RegistrationNumber} removed from the fleet.");
         }
+    }
+
+    // Shows all prices; the chosen fuel gets a new price.
+    private void ChangeFuelPrice()
+    {
+        FuelType[] fuels = Enum.GetValues<FuelType>();
+        var lines = fuels.Select(fuel => $"{fuel,-9} {_prices.Describe(fuel)}").ToList();
+        int index = InputReader.Choose("Fuel prices - choose one to change:", lines);
+        if (index < 0)
+            return;
+
+        FuelType fuelType = fuels[index];
+        double price = InputReader.ReadDouble(
+            $"New {fuelType} price (EUR/{FuelPrices.UnitOf(fuelType)}): ", 0, 10);
+        _prices.SetPrice(fuelType, price);
+        ConsolePrinter.Success($"{fuelType} now costs {_prices.Describe(fuelType)}.");
     }
 
     // Returns null if the fleet is empty or the user cancels.

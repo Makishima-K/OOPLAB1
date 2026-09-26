@@ -8,8 +8,8 @@ public static class FlightDialog
 {
     public static void Run(AirVehicle aircraft)
     {
-        Console.WriteLine($"{aircraft.EnergyStatus}, cruise speed {aircraft.CruiseSpeed:F0} km/h, " +
-                          $"max altitude {aircraft.MaxAltitude:F0} m.");
+        Console.WriteLine($"{aircraft.EnergyStatus}, speed {aircraft.CruiseSpeed:F0} km/h, " +
+                          $"max altitude {aircraft.AltitudeLimit:F0} m.");
         double distance = InputReader.ReadDouble("Flight distance (km): ", 1, 20_000);
 
         // The distance is asked first: a short flight does not allow a high altitude.
@@ -20,10 +20,10 @@ public static class FlightDialog
             return;
         }
         double altitude = InputReader.ReadDouble(
-            $"Cruise altitude (m, {AirVehicle.MinAltitude}-{maxAltitude:F0}): ", AirVehicle.MinAltitude, maxAltitude);
+            $"Flight altitude (m, {AirVehicle.MinAltitude}-{maxAltitude:F0}): ", AirVehicle.MinAltitude, maxAltitude);
 
         FlightPlan plan = aircraft.PlanFlight(distance, altitude);
-        PrintPlan(plan, aircraft.FuelLevel);
+        PrintPlan(plan, aircraft);
         if (!aircraft.HasEnoughFuel(plan))
         {
             ConsolePrinter.Error($"Flight cancelled: not enough fuel, " +
@@ -41,14 +41,16 @@ public static class FlightDialog
                                $"{aircraft.EnergyStatus}, mileage {aircraft.Mileage:F0} km.");
     }
 
-    private static void PrintPlan(FlightPlan plan, double fuelInTank)
+    private static void PrintPlan(FlightPlan plan, AirVehicle aircraft)
     {
         Console.WriteLine($"Flight plan: {plan.Distance:0.#} km at {plan.Altitude:F0} m");
         Console.WriteLine($"  Climb:   {plan.ClimbDistance,8:F1} km   (fuel x{AirVehicle.ClimbFuelFactor})");
         Console.WriteLine($"  Cruise:  {plan.CruiseDistance,8:F1} km");
         Console.WriteLine($"  Descent: {plan.DescentDistance,8:F1} km   (fuel x{AirVehicle.DescentFuelFactor})");
         Console.WriteLine($"  Path {plan.PathLength:F1} km, flight time {ConsolePrinter.FormatHours(plan.FlightHours)}");
-        Console.WriteLine($"  Fuel: {plan.FuelBurned:F1} L + {AirVehicle.FuelReserve * 100:0}% reserve = " +
-                          $"{plan.FuelRequired:F1} L, in the tank {fuelInTank:F1} L");
+        string reserve = aircraft.FuelReserve > 0
+            ? $" + {aircraft.FuelReserve * 100:0}% reserve = {plan.FuelRequired:F1} L"
+            : " (no reserve needed)";
+        Console.WriteLine($"  Fuel: {plan.FuelBurned:F1} L{reserve}, in the tank {aircraft.FuelLevel:F1} L");
     }
 }

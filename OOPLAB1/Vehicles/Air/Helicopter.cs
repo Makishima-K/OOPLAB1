@@ -1,6 +1,7 @@
 namespace OOPLAB1.Vehicles.Air;
 
 // SKETCH: helicopter - not finished and not in the menu yet.
+// A helicopter only flies: like other aircraft it cannot drive (AirVehicle.CanDrive).
 // Now it flies like an airplane (the algorithm in AirVehicle), but a helicopter takes off
 // vertically: the left triangle turns into a vertical line.
 // TODO:

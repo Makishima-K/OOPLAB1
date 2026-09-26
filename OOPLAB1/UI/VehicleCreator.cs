@@ -13,12 +13,19 @@ public static class VehicleCreator
         ("Electric car", CreateElectricCar),
         ("Truck", CreateTruck),
         ("Motorcycle", CreateMotorcycle),
-        ("Airplane", CreateAirplane),
+        ("Passenger airplane", CreatePassengerAirplane),
+        ("Cargo airplane", CreateCargoAirplane),
+        ("Light airplane", CreateLightAirplane),
+        ("Balloon", CreateBalloon),
         // TODO: ("Helicopter", CreateHelicopter) - see Vehicles/Air/Helicopter.cs
     };
 
     private static readonly FuelType[] CombustionFuels = { FuelType.Petrol, FuelType.Diesel, FuelType.Gas };
     private static readonly FuelType[] AviationFuels = { FuelType.Petrol, FuelType.Kerosene };
+
+    // Airliners have huge tanks and consumption, so their input limits are bigger.
+    private const double AircraftMaxTank = 400_000;
+    private const double AircraftMaxConsumption = 2000;
 
     // Asks for the type and all data. Returns null if the user cancels.
     public static Vehicle? Create(Fleet fleet)
@@ -72,18 +79,51 @@ public static class VehicleCreator
                               info.Mileage, tank.ConsumptionRate, fuelType, info.Year, hasSidecar);
     }
 
-    private static Vehicle CreateAirplane(string registrationNumber)
+    private static Vehicle CreatePassengerAirplane(string registrationNumber)
     {
         var info = ReadCommonInfo();
         FuelType fuelType = ReadFuelType(AviationFuels);
-        var tank = ReadFuelTank(maxCapacity: 400_000, maxConsumptionRate: 2000);
-        double maxAltitude = InputReader.ReadDouble("Maximum altitude (m): ", AirVehicle.MinAltitude, 20_000);
-        double climbRate = InputReader.ReadDouble("Climb rate (m/s): ", 0.5, 300);
-        double descentRate = InputReader.ReadDouble("Descent rate (m/s): ", 0.5, 300);
-        double cruiseSpeed = InputReader.ReadDouble("Cruise speed (km/h): ", 50, 3500);
-        return new Airplane(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
-                            info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
-                            maxAltitude, climbRate, descentRate, cruiseSpeed);
+        var tank = ReadFuelTank(AircraftMaxTank, AircraftMaxConsumption);
+        var flight = ReadFlightData("Cruise speed (km/h): ", 50);
+        int seats = InputReader.ReadInt($"Passenger seats (1-{PassengerAirplane.MaxSeats}): ",
+                                        1, PassengerAirplane.MaxSeats);
+        return new PassengerAirplane(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
+            tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed, seats);
+    }
+
+    private static Vehicle CreateCargoAirplane(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(AviationFuels);
+        var tank = ReadFuelTank(AircraftMaxTank, AircraftMaxConsumption);
+        var flight = ReadFlightData("Cruise speed (km/h): ", 50);
+        double cargoCapacity = InputReader.ReadDouble("Cargo capacity (kg): ", 100, 150_000);
+        return new CargoAirplane(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
+            tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed, cargoCapacity);
+    }
+
+    private static Vehicle CreateLightAirplane(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        FuelType fuelType = ReadFuelType(AviationFuels);
+        var tank = ReadFuelTank(AircraftMaxTank, AircraftMaxConsumption);
+        var flight = ReadFlightData("Cruise speed (km/h): ", 50);
+        return new LightAirplane(registrationNumber, info.Brand, info.Model, tank.FuelLevel,
+            tank.Capacity, info.Mileage, tank.ConsumptionRate, fuelType, info.Year,
+            flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed);
+    }
+
+    private static Vehicle CreateBalloon(string registrationNumber)
+    {
+        var info = ReadCommonInfo();
+        Console.WriteLine("Fuel type: Gas (propane)");
+        var tank = ReadFuelTank(maxCapacity: 1000, maxConsumptionRate: AircraftMaxConsumption);
+        var flight = ReadFlightData("Wind speed (km/h): ", 1);
+        return new Balloon(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
+                           info.Mileage, tank.ConsumptionRate, info.Year,
+                           flight.MaxAltitude, flight.ClimbRate, flight.DescentRate, flight.Speed);
     }
 
     // Asks until the number has a valid format and is not used in the fleet yet.
@@ -130,6 +170,17 @@ public static class VehicleCreator
         double fuelLevel = InputReader.ReadDouble($"Fuel level (L, 0-{capacity:0.#}): ", 0, capacity);
         double rate = InputReader.ReadDouble("Fuel consumption (L/100 km): ", 0.5, maxConsumptionRate);
         return (capacity, fuelLevel, rate);
+    }
+
+    // Common data of all aircraft. A balloon has no engine: its speed is the wind speed.
+    private static (double MaxAltitude, double ClimbRate, double DescentRate, double Speed) ReadFlightData(
+        string speedPrompt, double minSpeed)
+    {
+        double maxAltitude = InputReader.ReadDouble("Maximum altitude (m): ", AirVehicle.MinAltitude, 20_000);
+        double climbRate = InputReader.ReadDouble("Climb rate (m/s): ", 0.5, 300);
+        double descentRate = InputReader.ReadDouble("Descent rate (m/s): ", 0.5, 300);
+        double speed = InputReader.ReadDouble(speedPrompt, minSpeed, 3500);
+        return (maxAltitude, climbRate, descentRate, speed);
     }
 
     private static (int Doors, int Seats) ReadDoorsAndSeats()

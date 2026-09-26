@@ -3,6 +3,7 @@ namespace OOPLAB1.Vehicles;
 // Diesel truck. Cargo increases the consumption: +1 L/100 km for every 500 kg,
 // proportionally (250 kg -> +0.5, 1000 kg -> +2, 2000 kg -> +4 L/100 km).
 // A trailer gives extra capacity and adds 5 L/100 km.
+// Loading and unloading are common for all vehicles (Vehicle.LoadCargo / UnloadCargo).
 public class Truck : Vehicle
 {
     public const double ExtraConsumptionPer500Kg = 1;    // L/100 km
@@ -10,7 +11,6 @@ public class Truck : Vehicle
 
     public double CargoCapacity { get; }                 // kg, the truck itself
     public double TrailerCapacity { get; private set; }  // kg, 0 = no trailer
-    public double CurrentCargo { get; private set; }     // kg
 
     public Truck(string registrationNumber, string brand, string model,
                  double fuelLevel, double tankCapacity, double mileage,
@@ -26,31 +26,8 @@ public class Truck : Vehicle
 
     public bool HasTrailer => TrailerCapacity > 0;
 
-    public double TotalCapacity => CargoCapacity + TrailerCapacity;
-
-    public double FreeCapacity => TotalCapacity - CurrentCargo;
-
-    public double LoadPercent => CurrentCargo / TotalCapacity * 100;
-
-    public void LoadCargo(double weight)
-    {
-        EnsurePositive(weight, "Cargo weight");
-        if (weight > FreeCapacity + Tolerance)
-            throw new VehicleException(
-                $"Cannot load {weight:F0} kg: only {FreeCapacity:F0} kg of free capacity.");
-
-        CurrentCargo = Math.Min(TotalCapacity, CurrentCargo + weight);
-    }
-
-    public void UnloadCargo(double weight)
-    {
-        EnsurePositive(weight, "Cargo weight");
-        if (weight > CurrentCargo + Tolerance)
-            throw new VehicleException(
-                $"Cannot unload {weight:F0} kg: only {CurrentCargo:F0} kg is loaded.");
-
-        CurrentCargo = Math.Max(0, CurrentCargo - weight);
-    }
+    // The trailer adds its capacity to the truck's own.
+    public override double MaxCargo => CargoCapacity + TrailerCapacity;
 
     public void AttachTrailer(double trailerCapacity)
     {
@@ -85,8 +62,6 @@ public class Truck : Vehicle
     public override string GetInfo()
     {
         string trailer = HasTrailer ? $"attached, {TrailerCapacity:F0} kg" : "none";
-        return base.GetInfo() +
-               $"\n  Cargo: {CurrentCargo:F0} / {TotalCapacity:F0} kg ({LoadPercent:F0}%)" +
-               $"\n  Trailer: {trailer}";
+        return base.GetInfo() + $"\n  Trailer: {trailer}";
     }
 }

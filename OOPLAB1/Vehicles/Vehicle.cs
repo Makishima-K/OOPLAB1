@@ -18,6 +18,7 @@ public abstract class Vehicle
     public FuelType FuelType { get; }
     public int DevelopYear { get; }
     public int Passengers { get; private set; }
+    public double CurrentCargo { get; private set; }   // kg
 
     protected Vehicle(string registrationNumber, string brand, string model,
                       double fuelLevel, double tankCapacity, double mileage,
@@ -84,6 +85,16 @@ public abstract class Vehicle
     // Extra consumption for every passenger: 0.02 = +2 %.
     protected virtual double ConsumptionIncreasePerPassenger => 0;
 
+    // Cargo the vehicle can take, kg. 0 = the vehicle does not carry cargo.
+    public virtual double MaxCargo => 0;
+
+    public double FreeCargoCapacity => MaxCargo - CurrentCargo;
+
+    public double LoadPercent => MaxCargo > 0 ? CurrentCargo / MaxCargo * 100 : 0;
+
+    // False for vehicles that cannot move on the ground (most aircraft).
+    public virtual bool CanDrive => true;
+
     // Fuel needed for the distance with the current load.
     // Subclasses add their own load (cargo, sidecar) on top of it.
     public virtual double FuelConsumption(double distance)
@@ -94,6 +105,8 @@ public abstract class Vehicle
 
     public virtual void Drive(double distance)
     {
+        if (!CanDrive)
+            throw new VehicleException($"{TypeName} cannot drive on the ground - it can only fly.");
         EnsurePositive(distance, "Distance");
         double fuelNeeded = FuelConsumption(distance);
         if (fuelNeeded > FuelLevel + Tolerance)
@@ -137,6 +150,28 @@ public abstract class Vehicle
         Passengers -= count;
     }
 
+    public void LoadCargo(double weight)
+    {
+        EnsurePositive(weight, "Cargo weight");
+        if (MaxCargo == 0)
+            throw new VehicleException($"{TypeName} {RegistrationNumber} does not carry cargo.");
+        if (weight > FreeCargoCapacity + Tolerance)
+            throw new VehicleException(
+                $"Cannot load {weight:F0} kg: only {FreeCargoCapacity:F0} kg of free capacity.");
+
+        CurrentCargo = Math.Min(MaxCargo, CurrentCargo + weight);
+    }
+
+    public void UnloadCargo(double weight)
+    {
+        EnsurePositive(weight, "Cargo weight");
+        if (weight > CurrentCargo + Tolerance)
+            throw new VehicleException(
+                $"Cannot unload {weight:F0} kg: only {CurrentCargo:F0} kg is loaded.");
+
+        CurrentCargo = Math.Max(0, CurrentCargo - weight);
+    }
+
     // Full description; subclasses append their own lines.
     public virtual string GetInfo()
     {
@@ -151,6 +186,8 @@ public abstract class Vehicle
             $"  Tax: {Tax}";
         if (MaxPassengers > 0)
             info += $"\n  Passengers: {Passengers} / {MaxPassengers}";
+        if (MaxCargo > 0)
+            info += $"\n  Cargo: {CurrentCargo:F0} / {MaxCargo:F0} kg ({LoadPercent:F0}%)";
         return info;
     }
 
@@ -158,7 +195,7 @@ public abstract class Vehicle
     public override string ToString()
     {
         string name = $"{Brand} {Model}";
-        return $"{RegistrationNumber,-10} {TypeName,-12} {name,-22} {EnergyStatus,-31} {Mileage,8:F0} km";
+        return $"{RegistrationNumber,-10} {TypeName,-15} {name,-22} {EnergyStatus,-31} {Mileage,8:F0} km";
     }
 
     // " ab-1234 " -> "AB-1234"

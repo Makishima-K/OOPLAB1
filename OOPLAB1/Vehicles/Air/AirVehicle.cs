@@ -11,17 +11,17 @@ namespace OOPLAB1.Vehicles.Air;
 // Left triangle: the aircraft rises with ClimbRate (m/s) and at the same time flies forward
 // with CruiseSpeed, so its horizontal leg is CruiseSpeed * climb time. Then it keeps one
 // altitude. Right triangle: the same with DescentRate.
-// Fuel: climb x2, cruise x1, descent x0.5 of the normal consumption, plus a 10 % reserve.
-// Without enough fuel the flight is cancelled.
-// Drive() from Vehicle means taxiing on the ground.
+// Fuel: climb x2, cruise x1, descent x0.5 of the normal consumption, plus a reserve
+// (10 %, subclasses may change it). Without enough fuel the flight is cancelled.
+// Aircraft cannot drive on the ground - only an Airplane can taxi.
 public abstract class AirVehicle : Vehicle
 {
-    public const double MinAltitude = 100;       // m, lower is not a flight
-    public const double ClimbFuelFactor = 2;     // engines work at full power
+    public const double MinAltitude = 100;         // m, lower is not a flight
+    public const double ClimbFuelFactor = 2;       // engines work at full power
     public const double DescentFuelFactor = 0.5;
-    public const double FuelReserve = 0.1;       // +10 % for safety
+    public const double DefaultFuelReserve = 0.1;  // +10 % for safety
 
-    public double MaxAltitude { get; }   // m
+    public double MaxAltitude { get; }   // m, what the aircraft can technically reach
     public double ClimbRate { get; }     // m/s
     public double DescentRate { get; }   // m/s
     public double CruiseSpeed { get; }   // km/h
@@ -46,11 +46,19 @@ public abstract class AirVehicle : Vehicle
         CruiseSpeed = cruiseSpeed;
     }
 
+    public override bool CanDrive => false;
+
+    // Extra fuel that must be in the tank before the flight: 0.1 = +10 %.
+    public virtual double FuelReserve => DefaultFuelReserve;
+
+    // The highest allowed altitude; rules can make it lower than MaxAltitude.
+    public virtual double AltitudeLimit => MaxAltitude;
+
     // Calculates the flight without making it: the three parts, the time and the fuel.
     public FlightPlan PlanFlight(double distance, double altitude)
     {
         EnsurePositive(distance, "Flight distance");
-        EnsureInRange(altitude, MinAltitude, MaxAltitude, "Altitude");
+        EnsureInRange(altitude, MinAltitude, AltitudeLimit, "Altitude");
 
         double climbDistance = ClimbDistance(altitude);
         double descentDistance = DescentDistance(altitude);
@@ -83,7 +91,7 @@ public abstract class AirVehicle : Vehicle
     {
         EnsurePositive(distance, "Flight distance");
         double kmPerMetre = ClimbDistance(1) + DescentDistance(1);   // both triangles grow with the altitude
-        return kmPerMetre > 0 ? Math.Min(MaxAltitude, distance / kmPerMetre) : MaxAltitude;
+        return kmPerMetre > 0 ? Math.Min(AltitudeLimit, distance / kmPerMetre) : AltitudeLimit;
     }
 
     public bool HasEnoughFuel(FlightPlan plan) => plan.FuelRequired <= FuelLevel + Tolerance;
@@ -116,11 +124,18 @@ public abstract class AirVehicle : Vehicle
         return CruiseSpeed * descentSeconds / 3600;
     }
 
+    // Line about the speed in GetInfo (a balloon shows the wind instead).
+    protected virtual string SpeedInfo => $"Cruise speed: {CruiseSpeed:F0} km/h";
+
     public override string GetInfo()
     {
+        string altitude = AltitudeLimit < MaxAltitude
+            ? $"{MaxAltitude:F0} m, allowed {AltitudeLimit:F0} m"
+            : $"{MaxAltitude:F0} m";
         return base.GetInfo() +
-               $"\n  Max altitude: {MaxAltitude:F0} m" +
+               $"\n  Max altitude: {altitude}" +
                $"\n  Climb / descent rate: {ClimbRate:0.#} / {DescentRate:0.#} m/s" +
-               $"\n  Cruise speed: {CruiseSpeed:F0} km/h";
+               $"\n  {SpeedInfo}" +
+               $"\n  Fuel reserve: {FuelReserve * 100:0}%";
     }
 }

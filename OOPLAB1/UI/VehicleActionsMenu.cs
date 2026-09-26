@@ -1,12 +1,13 @@
 using OOPLAB1.Vehicles;
+using OOPLAB1.Vehicles.Air;
 
 namespace OOPLAB1.UI;
 
-// Actions that only some vehicle types have: passengers, cargo, trailer, sidecar, charging.
+// Actions that only some vehicles have: passengers, cargo, trailer, sidecar, charging.
 // The menu is built for the chosen vehicle, so it shows only what this vehicle can do.
 public static class VehicleActionsMenu
 {
-    public static void Run(Vehicle vehicle)
+    public static void Run(Vehicle vehicle, FuelPrices prices)
     {
         var menu = new Menu($"SPECIAL ACTIONS: {vehicle.RegistrationNumber}", "Back",
                             () => DescribeState(vehicle));
@@ -16,13 +17,16 @@ public static class VehicleActionsMenu
             menu.Add("Board passengers", () => BoardPassengers(vehicle))
                 .Add("Drop off passengers", () => DropOffPassengers(vehicle));
         }
+        if (vehicle.MaxCargo > 0)
+        {
+            menu.Add("Load cargo", () => LoadCargo(vehicle))
+                .Add("Unload cargo", () => UnloadCargo(vehicle));
+        }
 
         switch (vehicle)
         {
             case Truck truck:
-                menu.Add("Load cargo", () => LoadCargo(truck))
-                    .Add("Unload cargo", () => UnloadCargo(truck))
-                    .Add("Attach trailer", () => AttachTrailer(truck))
+                menu.Add("Attach trailer", () => AttachTrailer(truck))
                     .Add("Detach trailer", () => DetachTrailer(truck));
                 break;
             case Motorcycle motorcycle:
@@ -31,7 +35,7 @@ public static class VehicleActionsMenu
                 break;
             case ElectricCar electricCar:
                 menu.Add("Time to full charge", () => ShowTimeToFullCharge(electricCar))
-                    .Add("Cost of full charge", () => ShowChargingCost(electricCar));
+                    .Add("Cost of full charge", () => ShowChargingCost(electricCar, prices));
                 break;
         }
 
@@ -47,10 +51,13 @@ public static class VehicleActionsMenu
     private static string DescribeState(Vehicle vehicle)
     {
         var parts = new List<string> { $"{vehicle.Brand} {vehicle.Model}" };
+        if (vehicle.MaxPassengers > 0)
+            parts.Add($"passengers {vehicle.Passengers} / {vehicle.MaxPassengers}");
+        if (vehicle.MaxCargo > 0)
+            parts.Add($"cargo {vehicle.CurrentCargo:F0} / {vehicle.MaxCargo:F0} kg");
         switch (vehicle)
         {
             case Truck truck:
-                parts.Add($"cargo {truck.CurrentCargo:F0} / {truck.TotalCapacity:F0} kg");
                 parts.Add(truck.HasTrailer ? $"trailer {truck.TrailerCapacity:F0} kg" : "no trailer");
                 break;
             case Motorcycle motorcycle:
@@ -59,9 +66,10 @@ public static class VehicleActionsMenu
             case ElectricCar electricCar:
                 parts.Add(electricCar.EnergyStatus);
                 break;
+            case AirVehicle aircraft:
+                parts.Add($"fuel reserve {aircraft.FuelReserve * 100:0}%");
+                break;
         }
-        if (vehicle.MaxPassengers > 0)
-            parts.Add($"passengers {vehicle.Passengers} / {vehicle.MaxPassengers}");
         parts.Add($"consumption {vehicle.FuelConsumption(100):F2} {vehicle.FuelUnit}/100 km");
         return string.Join(", ", parts);
     }
@@ -92,29 +100,29 @@ public static class VehicleActionsMenu
         ConsolePrinter.Success($"{count} passenger(s) got off.");
     }
 
-    private static void LoadCargo(Truck truck)
+    private static void LoadCargo(Vehicle vehicle)
     {
-        if (truck.FreeCapacity < 0.1)
+        if (vehicle.FreeCargoCapacity < 0.1)
         {
-            Console.WriteLine("The truck is fully loaded.");
+            Console.WriteLine("It is fully loaded.");
             return;
         }
-        double weight = InputReader.ReadDouble($"Weight (kg, up to {truck.FreeCapacity:0.#}): ",
-                                               0.1, truck.FreeCapacity);
-        truck.LoadCargo(weight);
-        ConsolePrinter.Success($"Loaded {weight:0.#} kg, the truck is {truck.LoadPercent:F0}% full.");
+        double weight = InputReader.ReadDouble($"Weight (kg, up to {vehicle.FreeCargoCapacity:0.#}): ",
+                                               0.1, vehicle.FreeCargoCapacity);
+        vehicle.LoadCargo(weight);
+        ConsolePrinter.Success($"Loaded {weight:0.#} kg, {vehicle.LoadPercent:F0}% of the capacity is used.");
     }
 
-    private static void UnloadCargo(Truck truck)
+    private static void UnloadCargo(Vehicle vehicle)
     {
-        if (truck.CurrentCargo < 0.1)
+        if (vehicle.CurrentCargo < 0.1)
         {
-            Console.WriteLine("The truck is empty.");
+            Console.WriteLine("There is no cargo.");
             return;
         }
-        double weight = InputReader.ReadDouble($"Weight (kg, up to {truck.CurrentCargo:0.#}): ",
-                                               0.1, truck.CurrentCargo);
-        truck.UnloadCargo(weight);
+        double weight = InputReader.ReadDouble($"Weight (kg, up to {vehicle.CurrentCargo:0.#}): ",
+                                               0.1, vehicle.CurrentCargo);
+        vehicle.UnloadCargo(weight);
         ConsolePrinter.Success($"Unloaded {weight:0.#} kg.");
     }
 
@@ -127,7 +135,7 @@ public static class VehicleActionsMenu
         }
         double capacity = InputReader.ReadDouble("Trailer capacity (kg): ", 100, 30000);
         truck.AttachTrailer(capacity);
-        ConsolePrinter.Success($"Trailer attached, total capacity {truck.TotalCapacity:F0} kg.");
+        ConsolePrinter.Success($"Trailer attached, total capacity {truck.MaxCargo:F0} kg.");
     }
 
     private static void DetachTrailer(Truck truck)
@@ -155,10 +163,10 @@ public static class VehicleActionsMenu
         Console.WriteLine($"Charging {car.FreeBatteryCapacity:F1} kWh at {power:0.#} kW takes {time}.");
     }
 
-    private static void ShowChargingCost(ElectricCar car)
+    private static void ShowChargingCost(ElectricCar car, FuelPrices prices)
     {
-        double price = InputReader.ReadDouble("Electricity price (EUR per kWh): ", 0, 5);
-        double cost = car.CalculateChargingCost(price);
-        Console.WriteLine($"Charging {car.FreeBatteryCapacity:F1} kWh to 100% costs {cost:F2} EUR.");
+        double cost = car.CalculateChargingCost(prices.GetPrice(FuelType.Electric));
+        Console.WriteLine($"Charging {car.FreeBatteryCapacity:F1} kWh to 100% costs {cost:F2} EUR " +
+                          $"({prices.Describe(FuelType.Electric)}).");
     }
 }
