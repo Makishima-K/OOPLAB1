@@ -122,9 +122,9 @@ public static class InputReader
     public static int Choose(string title, IReadOnlyList<string> options, bool allowCancel = true)
     {
         Console.WriteLine(title);
-        int width = options.Count.ToString().Length;   // " 9." and "10." line up
+        int width = options.Count.ToString(CultureInfo.InvariantCulture).Length;   // " 9." and "10." line up
         for (int i = 0; i < options.Count; i++)
-            Console.WriteLine($"  {(i + 1).ToString().PadLeft(width)}. {options[i]}");
+            Console.WriteLine($"  {(i + 1).ToString(CultureInfo.InvariantCulture).PadLeft(width)}. {options[i]}");
         if (allowCancel)
             Console.WriteLine($"  {"0".PadLeft(width)}. Cancel");
 

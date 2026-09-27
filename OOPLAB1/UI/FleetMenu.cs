@@ -78,11 +78,13 @@ public sealed class FleetMenu
             Drive(vehicle);
     }
 
+    private static readonly string[] FlyOrTaxiOptions = { "Fly", "Drive on the ground (taxi)" };
+
     // Aircraft fly; an airplane can also drive on the ground (taxi).
     private void FlyOrTaxi(AirVehicle aircraft)
     {
         int choice = aircraft.CanDrive
-            ? InputReader.Choose("Fly or drive?", new[] { "Fly", "Drive on the ground (taxi)" })
+            ? InputReader.Choose("Fly or drive?", FlyOrTaxiOptions)
             : 0;
         if (choice == 0)
             FlightDialog.Run(aircraft, _wind);
