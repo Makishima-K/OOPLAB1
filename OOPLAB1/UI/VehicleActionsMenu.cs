@@ -9,7 +9,8 @@ using OOPLAB1.Vehicles.Water.Ships;
 
 namespace OOPLAB1.UI;
 
-// Actions that only some vehicles have: passengers, cargo, trailer, sidecar, sling, charging.
+// Actions that only some vehicles have: passengers, cargo, trailer, sidecar, sling, charging,
+// technical inspection.
 // The menu is built for the chosen vehicle, so it shows only what this vehicle can do.
 public static class VehicleActionsMenu
 {
@@ -48,6 +49,8 @@ public static class VehicleActionsMenu
                     .Add("Release the sling load", () => DetachSlingLoad(helicopter));
                 break;
         }
+        if (vehicle is GroundVehicle groundVehicle)
+            menu.Add("Pass technical inspection", () => PassInspection(groundVehicle));
 
         if (menu.Count == 0)
         {
@@ -71,6 +74,10 @@ public static class VehicleActionsMenu
             parts.Add(motorcycle.HasSidecar ? "with sidecar" : "no sidecar");
         if (vehicle is ElectricCar electricCar)
             parts.Add(electricCar.EnergyStatus);
+        if (vehicle is GroundVehicle groundVehicle)
+            parts.Add(groundVehicle.InspectionExpired
+                ? $"inspection EXPIRED {groundVehicle.InspectionValidUntil:yyyy-MM-dd}"
+                : $"inspection until {groundVehicle.InspectionValidUntil:yyyy-MM-dd}");
         if (vehicle is CargoHelicopter helicopter)
             parts.Add(helicopter.HasSlingLoad
                 ? $"sling {helicopter.SlingLoad:F0} kg, climb max {helicopter.AllowedClimbAngle:0} deg"
@@ -173,6 +180,12 @@ public static class VehicleActionsMenu
     {
         helicopter.DetachSlingLoad();
         ConsolePrinter.Success("The sling load is released.");
+    }
+
+    private static void PassInspection(GroundVehicle vehicle)
+    {
+        DateOnly validUntil = vehicle.PassInspection();
+        ConsolePrinter.Success($"Technical inspection passed, valid until {validUntil:yyyy-MM-dd}.");
     }
 
     private static void AttachSidecar(Motorcycle motorcycle)

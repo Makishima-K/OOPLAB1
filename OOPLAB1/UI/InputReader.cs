@@ -87,6 +87,24 @@ public static class InputReader
         return false;
     }
 
+    private static readonly string[] DateFormats = { "yyyy-MM-dd", "dd.MM.yyyy" };
+
+    // Both "2027-05-31" and "31.05.2027" are accepted.
+    public static DateOnly ReadDate(string prompt, DateOnly min, DateOnly max)
+    {
+        while (true)
+        {
+            string text = ReadLine(prompt);
+            if (!DateOnly.TryParseExact(text, DateFormats, CultureInfo.InvariantCulture,
+                                        DateTimeStyles.None, out DateOnly date))
+                ConsolePrinter.Warning($"'{text}' is not a date (yyyy-mm-dd).");
+            else if (date < min || date > max)
+                ConsolePrinter.Warning($"Enter a date from {min:yyyy-MM-dd} to {max:yyyy-MM-dd}.");
+            else
+                return date;
+        }
+    }
+
     public static bool ReadYesNo(string prompt)
     {
         while (true)

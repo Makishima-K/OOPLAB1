@@ -60,8 +60,11 @@ public static class VehicleCreator
         FuelType fuelType = ReadFuelType(CombustionFuels);
         var tank = ReadFuelTank();
         var (doors, seats) = ReadDoorsAndSeats();
+        SteeringSide steeringSide = ReadSteeringSide();
+        DateOnly inspection = ReadInspectionDate(info.Year);
         return new Car(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
-                       info.Mileage, tank.ConsumptionRate, fuelType, info.Year, doors, seats);
+                       info.Mileage, tank.ConsumptionRate, fuelType, info.Year, doors, seats,
+                       steeringSide, inspection);
     }
 
     private static Vehicle CreateElectricCar(string registrationNumber)
@@ -71,8 +74,10 @@ public static class VehicleCreator
         double charge = InputReader.ReadDouble($"Battery charge (kWh, 0-{capacity:0.#}): ", 0, capacity);
         double rate = InputReader.ReadDouble("Energy consumption (kWh/100 km): ", 1, 100);
         var (doors, seats) = ReadDoorsAndSeats();
+        SteeringSide steeringSide = ReadSteeringSide();
+        DateOnly inspection = ReadInspectionDate(info.Year);
         return new ElectricCar(registrationNumber, info.Brand, info.Model, charge, capacity,
-                               info.Mileage, rate, info.Year, doors, seats);
+                               info.Mileage, rate, info.Year, doors, seats, steeringSide, inspection);
     }
 
     private static Vehicle CreateTruck(string registrationNumber)
@@ -81,8 +86,11 @@ public static class VehicleCreator
         Console.WriteLine("Fuel type: Diesel");
         var tank = ReadFuelTank();
         double cargoCapacity = InputReader.ReadDouble("Cargo capacity (kg): ", 100, 40000);
+        SteeringSide steeringSide = ReadSteeringSide();
+        DateOnly inspection = ReadInspectionDate(info.Year);
         return new Truck(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
-                         info.Mileage, tank.ConsumptionRate, info.Year, cargoCapacity);
+                         info.Mileage, tank.ConsumptionRate, info.Year, cargoCapacity,
+                         steeringSide, inspection);
     }
 
     private static Vehicle CreateMotorcycle(string registrationNumber)
@@ -91,8 +99,10 @@ public static class VehicleCreator
         FuelType fuelType = ReadFuelType(CombustionFuels);
         var tank = ReadFuelTank();
         bool hasSidecar = InputReader.ReadYesNo("Sidecar attached?");
+        DateOnly inspection = ReadInspectionDate(info.Year);
         return new Motorcycle(registrationNumber, info.Brand, info.Model, tank.FuelLevel, tank.Capacity,
-                              info.Mileage, tank.ConsumptionRate, fuelType, info.Year, hasSidecar);
+                              info.Mileage, tank.ConsumptionRate, fuelType, info.Year, hasSidecar,
+                              inspection);
     }
 
     private static Vehicle CreatePassengerAirplane(string registrationNumber)
@@ -299,6 +309,22 @@ public static class VehicleCreator
         double speed = InputReader.ReadDouble(speedPrompt, 1, 100);
         double draft = InputReader.ReadDouble(draftPrompt, 0.1, 30);
         return (speed, draft);
+    }
+
+    // Cars and trucks only: a motorcycle has handlebars.
+    private static SteeringSide ReadSteeringSide()
+    {
+        SteeringSide[] sides = Enum.GetValues<SteeringSide>();
+        var names = sides.Select(side => side.ToString()).ToList();
+        return sides[InputReader.Choose("Steering wheel:", names, allowCancel: false)];
+    }
+
+    // The inspection may already be expired; a new vehicle has its first one up to 4 years ahead.
+    private static DateOnly ReadInspectionDate(int year)
+    {
+        DateOnly latest = DateOnly.FromDateTime(DateTime.Today).AddYears(GroundVehicle.MaxInspectionYears);
+        return InputReader.ReadDate("Technical inspection valid until (yyyy-mm-dd): ",
+                                    new DateOnly(year, 1, 1), latest);
     }
 
     private static (int Doors, int Seats) ReadDoorsAndSeats()

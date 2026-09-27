@@ -4,7 +4,8 @@ namespace OOPLAB1.Vehicles.Ground;
 
 // Motorcycle. One pillion passenger, one more with a sidecar.
 // A sidecar adds 15 % to the consumption, every passenger adds 5 %.
-public class Motorcycle : Vehicle
+// It has handlebars, not a steering wheel, so it is a GroundVehicle but not an Automobile.
+public class Motorcycle : GroundVehicle
 {
     public const double SidecarConsumptionFactor = 1.15;
     public const double PassengerConsumptionIncrease = 0.05;
@@ -14,9 +15,9 @@ public class Motorcycle : Vehicle
     public Motorcycle(string registrationNumber, string brand, string model,
                       double fuelLevel, double tankCapacity, double mileage,
                       double fuelConsumptionRate, FuelType fuelType, int developYear,
-                      bool hasSidecar)
+                      bool hasSidecar, DateOnly inspectionValidUntil)
         : base(registrationNumber, brand, model, fuelLevel, tankCapacity, mileage,
-               fuelConsumptionRate, EnsureNotElectric(fuelType), developYear)
+               fuelConsumptionRate, EnsureNotElectric(fuelType), developYear, inspectionValidUntil)
     {
         HasSidecar = hasSidecar;
     }
@@ -45,10 +46,10 @@ public class Motorcycle : Vehicle
         HasSidecar = false;
     }
 
-    public override double FuelConsumption(double distance)
+    protected override double FlatRoadConsumption(double distance)
     {
         double sidecarFactor = HasSidecar ? SidecarConsumptionFactor : 1;
-        return base.FuelConsumption(distance) * sidecarFactor;
+        return base.FlatRoadConsumption(distance) * sidecarFactor;
     }
 
     public override string GetInfo()

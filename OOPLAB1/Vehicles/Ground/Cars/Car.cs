@@ -3,7 +3,7 @@ using OOPLAB1.Fuel;
 namespace OOPLAB1.Vehicles.Ground.Cars;
 
 // Passenger car. Every passenger adds 2 % to the fuel consumption.
-public class Car : Vehicle
+public class Car : Automobile
 {
     public const int MinDoors = 2;
     public const int MaxDoors = 5;
@@ -17,9 +17,10 @@ public class Car : Vehicle
     public Car(string registrationNumber, string brand, string model,
                double fuelLevel, double tankCapacity, double mileage,
                double fuelConsumptionRate, FuelType fuelType, int developYear,
-               int numberOfDoors, int seats)
+               int numberOfDoors, int seats, SteeringSide steeringSide, DateOnly inspectionValidUntil)
         : base(registrationNumber, brand, model, fuelLevel, tankCapacity, mileage,
-               fuelConsumptionRate, EnsureNotElectric(fuelType), developYear)
+               fuelConsumptionRate, EnsureNotElectric(fuelType), developYear,
+               steeringSide, inspectionValidUntil)
     {
         NumberOfDoors = ValidateDoors(numberOfDoors);
         Seats = ValidateSeats(seats);
@@ -27,9 +28,11 @@ public class Car : Vehicle
 
     // For ElectricCar: it has a battery instead of a fuel tank, so the tank is 0 L of 0 L.
     protected Car(string registrationNumber, string brand, string model, double mileage,
-                  double energyConsumptionRate, int developYear, int numberOfDoors, int seats)
+                  double energyConsumptionRate, int developYear, int numberOfDoors, int seats,
+                  SteeringSide steeringSide, DateOnly inspectionValidUntil)
         : base(registrationNumber, brand, model, 0, 0, mileage,
-               energyConsumptionRate, FuelType.Electric, developYear)
+               energyConsumptionRate, FuelType.Electric, developYear,
+               steeringSide, inspectionValidUntil)
     {
         NumberOfDoors = ValidateDoors(numberOfDoors);
         Seats = ValidateSeats(seats);

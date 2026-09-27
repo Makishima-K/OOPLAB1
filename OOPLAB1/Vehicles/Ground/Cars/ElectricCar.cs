@@ -3,9 +3,12 @@ namespace OOPLAB1.Vehicles.Ground.Cars;
 // Electric car: it has its own battery instead of a fuel tank.
 // Battery in kWh, consumption rate (FuelConsumptionRate) in kWh/100 km, charger power in kW.
 // The inherited FuelLevel and TankCapacity stay 0 - there is no fuel tank.
+// Downhill the motor works as a generator and charges the battery back, so an electric car
+// saves more on a downhill road than a car with a fuel engine.
 public class ElectricCar : Car
 {
-    public const double DefaultChargerPower = 11;   // kW, a usual home charger
+    public const double DefaultChargerPower = 11;              // kW, a usual home charger
+    public const double RecuperationSavingPerPercent = 0.08;   // -8 % per 1 % downhill
 
     public double BatteryCapacity { get; }
     public double BatteryCharge { get; private set; }
@@ -13,9 +16,9 @@ public class ElectricCar : Car
     public ElectricCar(string registrationNumber, string brand, string model,
                        double batteryCharge, double batteryCapacity, double mileage,
                        double energyConsumptionRate, int developYear,
-                       int numberOfDoors, int seats)
+                       int numberOfDoors, int seats, SteeringSide steeringSide, DateOnly inspectionValidUntil)
         : base(registrationNumber, brand, model, mileage, energyConsumptionRate,
-               developYear, numberOfDoors, seats)
+               developYear, numberOfDoors, seats, steeringSide, inspectionValidUntil)
     {
         EnsurePositive(batteryCapacity, "Battery capacity");
         EnsureInRange(batteryCharge, 0, batteryCapacity, "Battery charge");
@@ -35,6 +38,8 @@ public class ElectricCar : Car
         $"Battery: {BatteryCharge:F1} / {BatteryCapacity:F1} kWh ({ChargePercent:F0}%)";
 
     public override double Range => BatteryCharge / FuelConsumption(100) * 100;
+
+    protected override double DownhillSaving => RecuperationSavingPerPercent;
 
     // Driving uses the battery, not the fuel tank.
     public override void Drive(double distance)

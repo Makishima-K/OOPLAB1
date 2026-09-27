@@ -1,14 +1,15 @@
 using OOPLAB1.Fuel;
 using OOPLAB1.Vehicles;
 using OOPLAB1.Vehicles.Air;
+using OOPLAB1.Vehicles.Ground;
 using OOPLAB1.Vehicles.Ground.Cars;
 using OOPLAB1.Vehicles.Water;
 
 namespace OOPLAB1.UI;
 
 // Main menu of the program. Works with every vehicle through the Vehicle base class;
-// only charging, flying and sailing have to know the exact type
-// (ElectricCar, AirVehicle, WaterVehicle).
+// only charging and the trip dialogs have to know the exact type
+// (ElectricCar, AirVehicle, WaterVehicle, GroundVehicle).
 public sealed class FleetMenu
 {
     private readonly Fleet _fleet;
@@ -71,6 +72,8 @@ public sealed class FleetMenu
             FlyOrTaxi(aircraft);
         else if (vehicle is WaterVehicle vessel)
             VoyageDialog.Run(vessel, _wind);
+        else if (vehicle is GroundVehicle groundVehicle)
+            DriveDialog.Run(groundVehicle);
         else if (vehicle != null)
             Drive(vehicle);
     }
@@ -87,6 +90,7 @@ public sealed class FleetMenu
             Drive(aircraft);
     }
 
+    // Plain drive without a road: an airplane taxiing on the ground.
     private static void Drive(Vehicle vehicle)
     {
         string unit = vehicle.FuelUnit;

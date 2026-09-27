@@ -14,21 +14,30 @@ public static class DemoData
 {
     public static void AddTo(Fleet fleet)
     {
+        // Inspection dates are counted from today, so the demo looks the same on any day.
+        DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+
+        // Right-hand drive: bought in the UK
         fleet.Add(new Car("AB-1234", "Toyota", "Corolla",
             fuelLevel: 32, tankCapacity: 50, mileage: 15000, fuelConsumptionRate: 6,
-            fuelType: FuelType.Petrol, developYear: 2015, numberOfDoors: 4, seats: 5));
+            fuelType: FuelType.Petrol, developYear: 2015, numberOfDoors: 4, seats: 5,
+            steeringSide: SteeringSide.Right, inspectionValidUntil: today.AddMonths(14)));
 
         fleet.Add(new ElectricCar("EV-2022", "Tesla", "Model 3",
             batteryCharge: 45, batteryCapacity: 75, mileage: 8000, energyConsumptionRate: 15,
-            developYear: 2022, numberOfDoors: 4, seats: 5));
+            developYear: 2022, numberOfDoors: 4, seats: 5,
+            steeringSide: SteeringSide.Left, inspectionValidUntil: today.AddMonths(30)));
 
         fleet.Add(new Truck("TR-7700", "Iveco", "Daily",
             fuelLevel: 60, tankCapacity: 90, mileage: 120000, fuelConsumptionRate: 12,
-            developYear: 2008, cargoCapacity: 2000));
+            developYear: 2008, cargoCapacity: 2000,
+            steeringSide: SteeringSide.Left, inspectionValidUntil: today.AddMonths(5)));
 
+        // The inspection expired 12 days ago: the program warns before a trip
         fleet.Add(new Motorcycle("MC-500", "Honda", "CB500",
             fuelLevel: 10, tankCapacity: 17, mileage: 32000, fuelConsumptionRate: 4.5,
-            fuelType: FuelType.Petrol, developYear: 1998, hasSidecar: false));
+            fuelType: FuelType.Petrol, developYear: 1998, hasSidecar: false,
+            inspectionValidUntil: today.AddDays(-12)));
 
         // Cessna 172: about 36 L/h at 226 km/h = 16 L/100 km, climbs ~3.7 m/s
         fleet.Add(new LightAirplane("YL-ABC", "Cessna", "172",
